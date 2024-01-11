@@ -1,0 +1,355 @@
+\documentclass{uofa_template}
+
+\usepackage{lipsum}
+\usepackage{xurl}
+
+\newcommand*{\name}{Diego Meseguer}
+\newcommand*{\course}{Numerical Analysis - CSCI 166}
+\newcommand*{\assignment}{Final Project}
+
+\begin{document}
+
+\maketitle
+
+\begin{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%
+\item Introduction
+%%%%%%%%%%%%%%%%%%%%
+
+The theme of this project will be computing the square root of a number by finding each digit of the square root in a successive manner. While the algorithm to implement this method is quite straightforward, there is some interesting theory that explains why it works and gives us an idea about ways in which it can be improved, like lookup tables or a binary implementation. Thus, we will start by mentioning some of the important results that we need to consider to understand why the Digit-by-digit method works. After that, we we will see an example of the algorithm in action and comment on the strengths and weaknesses of this method. While this may not be the fastest or most efficient method to find a square root, it has some interesting characteristics like giving us control over the number of decimal places that we want in our resulting square root. This can lead to some interesting applications in the area of answering coding interview questions. Also, throughout history square roots have had important applications in all areas of human life like finance, civil engineering, probability, among others. 
+
+%%%%%%%%%%%%%%%%%%%%
+\item Theory
+%%%%%%%%%%%%%%%%%%%%
+
+\textbf{Digit-by-digit Method} \\
+This numerical method finds the square root of a number by computing each digit \\
+of the root in a successive manner. \\
+
+\textbf{Notation} \\
+We will use the following notation: \\
+Let $a$ and $b$ be integers, then  \\
+$ab$ means $a$ times $b$ \\
+$a|b$ means we merge the two numbers together following the decimal positional system, so if \\
+$a = 42$ and $b = 713$ then $a|b = 42713$ \\
+For compactness we can write a number like $5012074000000$ as $5012(9)$, where the number inside parenthesis represents the other digits that we may not know yet.\\
+
+\textbf{Idea of the Digit-by-digit Method} \\
+To implement this algorithm we will use the binomial theorem and write it in a special form \\
+in order to have a nice expression that let us approximate the square root from below. \\
+We will rely on the decimal number system and how the value of each digit in a number \\
+depends on its position. We will also use the fact that if we square a number with $n$ digits, \\
+then we can expect the square to have about twice the digits, so $2n$. \\
+
+So for this method we will consider the identity
+
+\begin{equation}
+(a+b)^2 = a^2 +(2a+b)b
+\end{equation}
+
+The idea is that if the LHS is the square whose root we are trying to approximate then we \\
+can start by making an initial approximation, this is the $a^2$ term. Then we can refine our \\
+initial guess by computing the $(2a+b)b$ term. For example, consider the problem of finding $\sqrt{182329}$ where $(427)^2 = 182329$. Notice that since our number has 6 digits we already know that \\
+the root will have 3 digits.
+
+So in our example, let's observe that
+
+\begin{equation}
+(400)^2 = 160000
+\end{equation}
+
+Also, notice that $(500)^2 = 250000$. Thus, we can conclude that
+$4(2) \leq \sqrt{182329} < 5(2) $. Because of how the decimal positional system works
+we can be sure that the $4$ we just found is known to be a correct digit of the square root and it will not change as we continue to find the other digits of the root. \\
+
+So let's refine our approximation, we observe that $(420)^2 = 176400$, according to
+our identity that will be
+
+\begin{equation}
+(420)^2 = 160000 + (800 + 20)20 = 176400
+\end{equation}
+
+So we took $(400)^2$ and added something extra which is the $(2a+b)b$ term. For the next
+step we have
+
+\begin{equation}
+(427)^2 = 176400 + (840 + 7)7 = 182329
+\end{equation}
+
+Again we took what we had in the previous stage which is $176400$ and added the extra term
+
+This small example gives us an idea of how the algorithm will be set up. In order to implement \\ this idea in a systematic way we need to establish a few more results. The most important one is \\ 
+the principle that we will apply on each iteration of the algorithm after we make our initial guess.\\
+Let $a$ still be an integer, but this time $b$ will be a digit, so a number
+between $0$ and $9$ \\
+
+\begin{equation}
+\begin{gathered}
+\begin{aligned}
+(a|b)^2 = (10a + b)^2 \\
+(a|b)^2 = 100a^2 + 20ab + b^2 \\
+(a|b)^2 - 100a^2 = 20ab + b^2 \\
+(a|b)^2 - 100a^2 = (20a + b)b \\
+(a|b)^2 - 100a^2 = ((2a)|0 + b)b \\
+(a|b)^2 - 100a^2 = ((2a)|b)b \\
+(a|b)^2 - a^2|00 = ((2a)|b)b
+\end{aligned}
+\end{gathered}
+\end{equation}
+
+This result tells us that if we have found all but the last digit of a square root. We can find
+that digit, in this case $b$, by subtracting $100$ times the square of the partial square root, in this case $a$,
+from the number whose square root we are trying to find. We then search for this digit $b$
+in such a way that the term $((2a)|b)b$ equals the difference we got in our result. \\
+
+It is important to note that if $(a|b)^2$ is a perfect square then it makes sense that we use an equals sign in \textbf{(5)}, but if we a have non-perfect square then we can change this sign to an inequality sign to signify that we have an approximation and during each iteration  we get closer to the actual square root from below. So we can write
+
+\begin{equation}
+(a|b)^2 - a^2|00 \geq ((2a)|b)b
+\end{equation}
+
+One important detail is that the remainder $(a|b)^2 - a^2|00$ always has to be positive, if
+the remainder is negative then we have exceeded the value of the square root and our algorithm is not supposed to do that.
+
+Before laying out the steps of the algorithm, there is one more result that we need to consider. Notice that
+
+\begin{equation}
+\begin{gathered}
+1^2 = 1, ..., 9^2 = 81 \text{   so the squares in this range have between 1-2 digits, most have 2 digits} \\
+10^2 = 100, ..., 99^2 = 9801 \text{   so the squares in this range have between 3-4 digits, most have 4 digits} \\
+100^2 = 10000, ..., 999^2 = 998001 \text{   so the squares in this range have between 5-6 digits, most have 6 digits} \\
+1000^2 = 1000000, ..., 9999^2 = 99980001 \text{  so the squares in this range have between 7-8 digits, most have 8 digits } \\
+\text{And so on...}
+\end{gathered}
+\end{equation}
+
+We can summarize this idea with the following inequality for a number $a$ that has n-digits
+
+\begin{equation}
+\begin{gathered}
+10^{n-1} \leq a < 10^n \\
+10^{2n-2} \leq a^2 < 10^{2n}
+\end{gathered}
+\end{equation}
+
+This and the main result will be important when we consider why the algorithm groups the digits of the number in pairs. \\
+
+\textbf{Algorithm} \\
+
+Some rules that the algorithm will follow are that we write the root above the long
+division symbol, we place the decimal point of the root above the decimal point of the square and one digit of the root will be above each digit-pair of the square. Also, during the execution of the algorithm we ignore the decimal point of the root and always treat it as a whole number, only at the end when we get our result we acknowledge the decimal point.
+
+\emph{Step 0} \\
+Write the number in decimal form, similar to long division. \\
+
+\emph{Step 1} \\
+Starting from the decimal point of the number and to the left, group the digits into groups of two. Do the same thing but starting from the decimal point and to the right. If our number has an odd number of integer digits then the leftmost group will have only one digit. \\
+
+\emph{Step 2} \\
+This is the initial guess, we look at the leftmost group and find the largest integer whose square is less than or equal to the leftmost group. \\
+
+\emph{Step 3} \\
+Let $p$ be the partial square root that we got so far, put the digit we obtained in our initial guess on top of the leftmost group of the square. This is our first value of $p$, as well as our initial approximation and the most significant digit of the square root.
+
+Let $r$ be the remainder we obtain on each iteration of the algorithm, subtract our initial guess from the leftmost group, this is our first value of $r$. \\
+
+\emph{Step 4} \\
+Bring down the next leftmost group of digits (in case we have exhausted the groups of digits bring down $00$) and place them next to our current remainder $r$, such that we have $r|(\text{next group of digits not yet used})$. \\
+
+\emph{Step 5} \\
+Let $d$ be the next digit of the root, use trial and error to find $d$. To find $d$, find the greatest digit $d$ such that $((2p)|d)d \leq r$. \\
+
+\emph{Step 6} \\
+Subtract $((2p)|d)d$ from $r$ to get a new remainder $r$. Then update the current partial square root $p$ with its new digit $d$. \\
+
+\emph{Step 7} \\
+Stop after we have exhausted all groups of digits and the remainder is $0$. Or stop after we have reached the desired precision for our root. Otherwise, repeat steps 4 - 6. \\
+
+Example of the algorithm for $\sqrt{389688.0625}$
+
+\[
+\begin{array}{ r *{32}{c@{}} }
+& 6 & & & 2 & & & 4 & & . & & 2 & && 5 \\ \cline{2-15}\\[-14.5pt]
+\multicolumn{1}{r}{\rlap{\kern4.5pt)}} & 3 & 8 & , & 9 & 6 &, & 8 & 8 & . & 0 & 6 & , & 2 & 5 \\
+& 3 & 6 && \downarrow \\ \cline{2-6}
+& & 2 & & 9 & 6 &&&&&&&&&&&&&&&& 12\underline{2} \cdot \underline{2} \\
+& & 2 & & 4 & 4 && \downarrow \\  \cline{3-9}
+& & & & 5 & 2 & & 8 & 8 &&&&&&&&&&&&& 124\underline{4} \cdot \underline{4} \\
+& & & & 4 & 9 & & 7 & 6 &&& \downarrow \\   \cline{5-13}
+& & & & & 3 &  & 1 & 2 && 0 & 6 &&&&&&&&&& 1248\underline{2} \cdot \underline{2} \\
+& & & & & 2 &  & 4 & 9 && 6 & 4 && \downarrow \\  \cline{6-17}
+& & & & & & & 6 & 2 & & 4 & 2 && 2 & 5 &&&&&&&&&& 12484\underline{5} \cdot \underline{5} \\
+& & & & & & & 6 & 2 & & 4 & 2 && 2 & 5 \\ \cline{7-16}
+& & & & & & &  &  & &  &  &&  & 0
+\end{array}
+\]
+
+We can see that our initial guess (first value of $p$) is 6, so we start subtracting $36$ from $38$ to obtain our first $r$. To the right of that first remainder $r$ we drop down the next group in order to form $r|96$ so $r = 296$. Then we use trial and error to find $d$, since $2p$ is 12 we are looking for the best $d$ to satisfy $12\underline{?} \cdot \underline{?} \leq 296$ . We see that $1$ works, $2$ also works but $3$ doesn't so we pick $2$. We subtract $122 \cdot 2 = 244$ from $296$ to obtain a new remainder $r$, then we update $p$ with the $d = 2$ just found, noting it above the long division symbol.
+
+To continue with the next iteration we drop the next group of digits, so we drop $88$ to the right of $r$ and repeat the above steps...
+
+We can now appreciate why we group the digits of the square in groups of two. Our algorithm finds one digit of the square root each iteration, by decomposing the square into groups of two digits we are guaranteed to always get the partial square root one digit at a time. Furthermore, notice how in each iteration we are finding the best square root approximation for the number formed by the digits of the square that we have dropped so far. In other words...
+
+When we start $6$ is the largest integer whose square $\leq 38$ \\
+Similarly, on the first iteration we find $62^2 = 3844 \leq 3896$ \\
+On the second iteration we find $624^2 = 389376 \leq 389688$ \\
+On the third iteration we find $624.2^2 = 389625.64 \leq 389688.06$ \\
+On the fourth iteration we find $624.25^2 = 389688.0625 \leq 389688.0625$ \\
+ 
+As mentioned in \textbf{(7)} the square root of a $2$ digit number has $1$ digit. Furthermore, the square root of a $4$ digit number has $2$ digits. And so on. When we get the remainder $r = 296$ we can also see that remainder as the result of taking the square of our partial square root $p^2 = 6^2 = 36$ and then multiplying it by $100$ and subtracting that from $3896$ so $3896 - 36000 = 296$. The fact that we take $p^2$ by $100$ each iteration and subtract that from the square that we have formed up to that point makes sense since it is following the identity that we mentioned in \textbf{(6)}, that is... \\
+
+ $(a|b)^2 - a^2|00 \geq ((2a)|b)b$ \\
+
+ For the particular step of the algorithm we just described 
+
+$(a|b)^2$ corresponds to $3896$ \\
+$a^2|00$ corresponds to $6^2 \cdot 100$ \\
+$((2a)|b)b$ corresponds to $12\underline{2} \cdot \underline{2}$ \\
+
+\textbf{Comments about implementation on a computer} \\
+
+The steps for the algorithm written in the previous section are meant for pen and paper, in order to implement the method on a computer we will use almost the same steps in the same order with a few differences. \\
+
+In general, the code for this algorithm is simple and short, but the consideration of special or edge cases can make the code less short. \\
+
+One difference with the pen and paper version is when we group the digits of the square. This is easy to do on paper by putting a comma or something similar to group the digits in pairs. However, on the computer we have a limitation because of the way floating point numbers work. To group the numbers we need to first count how many digits the square has. We can certainly count the number of digits in the integer part, but counting the number of digits after the decimal point is not easy to do in a reliable manner. This is because there are many numbers that don't have an exact floating point representation. For example in MATLAB we can try $0.3 - 0.2 - 0.1$ and see that it's not exactly $0$. Thus, we can use an alternative approach to deal with squares that have a fractional part. The solution will be to check if the number is not an integer before we start the algorithm, if this is the case we multiply the square by $10$ to some power in order to move that decimal point and make it an integer. After that, we run the algorithm as normal and at the very end we divide the square root by $10$ raised to the same power divided by two. This solves the problem of not having a good way to group the digits after the decimal point on the computer. \\
+
+Another difference with the pen and paper version is in step $4$ where we start to bring down $00$s after we have exhausted the groups of digits of the square and $r$ is still not $0$. In the computer version we will do this in a later step by having an additional step at the end that will check if $r$ is not $0$ and then start a final loop very similar to the one that repeats steps $4-6$. When we are done with this loop we will divide the square root by $10$ raised to some number which is the same as the number of times that we run this final loop. This places the decimal point in the correct place. \\
+
+In summary, if the number is... \\
+\begin{itemize}
+\item A perfect square $\rightarrow$ Run algorithm $\rightarrow$ Get result \\
+\item A square with a fractional part (whether perfect or not) $\rightarrow$ Multiply by $10^\text{eMax}$ $\rightarrow$ Run algorithm $\rightarrow$ Divide by $10^\text{eMax/2}$ $\rightarrow$ Get result \\
+\item A non-perfect integer square $\rightarrow$ Run algorithm $\rightarrow$ Run extra loop $\text{nMax}$ times $\rightarrow$ Divide by $10^\text{nMax}$ $\rightarrow$ Get result \\
+\end{itemize}
+
+This should cover all possible cases. \\
+
+\textbf{Disadvantages of the Digit-by-digit method} \\
+\begin{itemize}
+\item The algorithm becomes too expensive as the number of iterations increases since we have the partial square root $p$ which is always getting larger by a factor of $10$ during each iteration, even after the decimal point. The other quantity that can get quite large is the remainder $r$ that also grows roughly by a factor of $10$ as we drop the two digits during each iteration. Thus, the algorithm becomes slower with every new digit we get as we have to deal with bigger calculations. \\
+\end{itemize}
+
+\textbf{Advantages of the Digit-by-digit method} \\
+\begin{itemize}
+\item The method is convenient to do on pen and paper.
+
+\item We have control over how many digits of the square root we want and every digit that we find is known to be correct. So we can use this method to easily answer questions like "Regarding $\sqrt{x}$, how many times does the digit $y$ occur in the first $1000000$ decimal digits?" 
+
+\item If we have an integer and the remainder is $0$ after we have exhausted all the digits then we are guaranteed that such integer is a perfect square. Thus, we can use the method to check if a given integer is a perfect square.
+
+\item Technically we don't need to use division for this method, so if we are in a system that doesn't have division available (we can't use the Babylonian method), we can still use this method since the main operation that we execute each iteration is to multiply a large number by a single digit number. \\
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%
+\item Homework Assignment
+%%%%%%%%%%%%%%%%%%%%
+
+\textbf{1) Pen and paper - Digit-by-digit Method} (Not programming)
+
+a) We know that $p$ grows by a factor of $10$ each iteration, but the growth of $r$ is trickier because of how the number of digits in the remainder varies each iteration. Consider what would the best case for $r$ in terms of memory consumption. In other words, what would be a number that gives us the best case for $r$ when we apply the algorithm to find its square root. Apply the algorithm to the number and answer if it's unique. \\ \\
+
+b) If we apply the algorithm to an integer and find that the value of $r$ is $0$ after we have exhausted all the groups of digits, what will always be true about the integer? \\
+
+(a) It's an even number \\
+(b) It's an odd number \\
+(c) It's a perfect square \\
+(d) It's a prime number \\ \\
+
+c) Suppose we want to find $\sqrt{7.145}$ correct to five decimal places. Reduce this problem to the problem of finding the square root of an integer and then adjusting the decimal point. \\ \\
+
+d) Suppose we have a FPNS where the largest number that can be represented is $2^{1024} - 2^{971}$. Considering how $p$ grows each iteration. What would be a good estimate for the maximum number of iterations that we can do in the algorithm before we run into trouble? \\ \\
+
+\textbf{2) Finding Square Roots - Digit-by-digit Method} (Programming)
+
+a) Implement the Digit-by-digit Method and use it to find the following square roots \\ \\
+$\sqrt{14}$ \\ \\
+$\sqrt{183033.343317025369}$ \\ \\
+$\sqrt{389688.0625}$ \\ \\
+$\sqrt{63664441}$ \\ \\
+
+b) Modify the Digit-by-digit Method to count how many times the digit 8 occurs in the first 30 decimal digits of the $\sqrt{2}$. \\
+\textbf{HINT:} You only need to add a small piece of code. \\
+
+%%%%%%%%%%%%%%%%%%%%
+\item Homework Solutions
+%%%%%%%%%%%%%%%%%%%%
+
+\textbf{1) Pen and paper - Digit-by-digit Method} (Not programming)
+
+a) We choose 10000 \\
+\[
+\begin{array}{ r *{32}{c@{}} }
+& 1 & &  0 & & & 0  \\ \cline{2-10}\\[-14.5pt]
+\multicolumn{1}{r}{\rlap{\kern4.5pt)}} & 1 & , & 0 & 0 & , &0 & 0 \\
+& 1 && \downarrow \\ \cline{2-4}
+& & 0  & 0  \\
+& & 0  & 0 &&& \downarrow \\  \cline{3-7}
+& & & &  & 0 & 0 \\
+& & & &  & 0 & 0 \\   \cline{5-9}
+& & & & & & 0  \\
+\\ \cline{8-20}
+& & & & & & &  &  & &  &  &
+\end{array}
+\]
+
+This number is not unique, since there is a series of numbers like \\
+$10^2 = 100$ \\
+$10^4 = 10000$ \\
+$10^6 = 1000000$ \\
+that always give us the best case for the way $r$ grows by making sure that it's always $0$. \\
+
+b) (c) It's a perfect square \\
+
+c) $\frac{\sqrt{7.145 \cdot 10^{10}}}{10^5} = 2.6730...$ \\
+We multiply $7.145$ by $10^{10}$ to get $71450000000$. Then
+we take the square root of this integer and finally divide by $10^{5}$ to put the decimal point in the correct place.
+
+d) $\log_{10} (2^{1024} - 2^{971}) = 308.254715...$ \\
+We see that 306 iterations would be a good estimate, since we already have obtained one digit of the partial square root before we enter the loop.
+
+ \pagebreak
+ 
+%%%%%%%%%%%%%%%%%%%%
+\item Homework Narrative Reflection
+%%%%%%%%
+
+The reason behind problem problem $1a$ is to reinforce the understanding of the theory and to have a better idea of how $r$ can grow during each iteration. Problem $1b)$ also aims to further improve the understanding of the theory by making sure we understand a basic property of this method. In problem $1c$ we apply the idea that we can always convert the problem of finding the square root of a fractional number to finding the square root of an integer number. This is important because we can use this idea during the implementation of the algorithm when we are faced with some of the limitations of floating point numbers. Problem $1d$ allows us to consider how the limitations of our floating point number system can limit our algorithm.
+
+For the second part of the homework, the idea behind the first problem is to put into practice the theory we have learned so far by implementing the Digit-by-digit method. Finally, Problem $2b$ is about finding a nice application that makes use of some of the features of this method, like having control over how many digits we want in our result.
+
+%%%%%%%%%%%%%%%%%%%%
+\item Conclusion
+%%%%%%%%%%%%%%%%%%%%
+
+I think that, despite not being the fastest, this method has some interesting uses as a convenient way of finding a square root using pen and paper or for some specific questions regarding square roots where having control of the digits in the result can be convenient. I was surprised, when testing the algorithm and printing the values of $r$ and $p$ on each iteration, that on average $r$ seems to grow by a factor of 10 just like $p$. So even if $r$ may not grow on a particular iteration in the next one it can grow by a factor of $100$ compensating for the previous one, so at the end of the algorithm its grow ends up being very similar to $p$. Learning about this method made me interested in how we can optimize an algorithm like this by using bitwise operations like left shifts, since that would be cheaper than multiplying and we multiply a lot in this method.
+
+%%%%%%%%%%%%%%%%%%%%
+\item Bibliography
+%%%%%%%%%%%%%%%%%%%%
+
+\url{http://djm.cc/library/Algebra_Elementary_Text-Book_Part_I_Chrystal_edited.pdf}
+Inspired problem 1) c)
+
+\url{https://stackoverflow.com/questions/10233444/max-float-represented-in-ieee-754}
+Inspired problem 1) d)
+
+\url{https://q12.medium.com/reflections-on-the-square-root-of-two-ae792db4c7e} \\
+Inspired problem 2) b)
+
+\url{https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method}
+
+\url{https://www.mathworks.com/matlabcentral/answers/126077-how-can-i-spilt-long-integer-number-into-pairs}
+
+\url{https://www.homeschoolmath.net/teaching/sqr-algorithm-why-works.php}
+
+\url{https://www.youtube.com/watch?v=EnxV3_1oaOU}
+
+\url{https://www.cantorsparadise.com/the-square-root-algorithm-f97ab5c29d6d}
+
+\url{https://math.stackexchange.com/questions/3721504/help-to-understand-algorithm-for-finding-square-root}
+
+\end{enumerate}
+\end{document}
+
